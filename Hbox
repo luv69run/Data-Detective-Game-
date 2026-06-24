@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Detective</title>
+<style>
+body{background:#0f172a;color:#e2e8f0;font-family:sans-serif;max-width:800px;margin:0 auto;padding:20px}
+h1{color:#38bdf8;text-align:center}
+.card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:15px;margin:10px 0;cursor:pointer}
+.card:hover{border-color:#22c55e}
+.selected{border-color:#22c55e;background:#1e293b}
+.btn{background:linear-gradient(135deg,#38bdf8,#22c55e);color:#fff;border:none;padding:15px 40px;font-size:18px;border-radius:20px;cursor:pointer;display:block;margin:20px auto}
+.question{font-size:18px;margin:20px 0}
+.option{background:rgba(56,189,248,0.1);border:2px solid #334155;padding:15px;margin:10px 0;border-radius:10px;cursor:pointer}
+.option:hover{border-color:#38bdf8}
+.correct{border-color:#22c55e;background:rgba(34,197,94,0.2)}
+.wrong{border-color:#ef4444;background:rgba(239,68,68,0.2)}
+.feedback{padding:15px;margin:15px 0;border-radius:10px}
+.ok{background:rgba(34,197,94,0.1);border:1px solid #22c55e;color:#22c55e}
+.bad{background:rgba(239,68,68,0.1);border:1px solid #ef4444;color:#ef4444}
+.next-btn{background:#22c55e;color:#fff;border:none;padding:12px 30px;border-radius:15px;cursor:pointer;margin:15px 0}
+.cert{text-align:center;padding:30px}
+.cert-box{border:3px solid #f59e0b;border-radius:15px;padding:30px;background:#1e293b}
+.gold{color:#fbbf24}
+</style>
+</head>
+<body>
+<div id="welcome">
+<h1>🕵️ Data Detective</h1>
+<p style="text-align:center;color:#94a3b8">The Ultimate Analyst Challenge</p>
+<p style="text-align:center;color:#f59e0b">"Every dataset has a secret. Can you find it?"</p>
+<div class="card" onclick="pick('sql')" id="c-sql"><h3>🗄️ SQL Samurai</h3><p>Master of databases</p></div>
+<div class="card" onclick="pick('python')" id="c-python"><h3>🐍 Python Wizard</h3><p>Data magician</p></div>
+<div class="card" onclick="pick('viz')" id="c-viz"><h3>📊 Viz Queen</h3><p>Dashboard diva</p></div>
+<div class="card" onclick="pick('stats')" id="c-stats"><h3>📈 Stats Sage</h3><p>Pattern finder</p></div>
+<button class="btn" id="start" onclick="go()" disabled>🔍 Start Investigation</button>
+</div>
+
+<div id="game" style="display:none">
+<h2 id="title"></h2>
+<p id="desc" style="color:#94a3b8"></p>
+<div style="background:#1e293b;padding:15px;border-radius:10px;margin:15px 0">
+<h3 style="color:#f59e0b">📁 Case File</h3>
+<p id="scenario"></p>
+</div>
+<div class="question" id="question"></div>
+<div id="options"></div>
+<div id="feedback"></div>
+<button class="next-btn" id="next" onclick="next()" style="display:none">Next →</button>
+</div>
+
+<div id="cert" style="display:none" class="cert">
+<div class="cert-box">
+<h1 class="gold">🏆 Certificate</h1>
+<h2 class="gold">Master Data Detective</h2>
+<h3>Luv Singh</h3>
+<p>Score: <span id="s-score"></span> | Correct: <span id="s-correct"></span>/7</p>
+<p id="s-date"></p>
+<button class="btn" onclick="alert('Press Ctrl+P to save as PDF')">💾 Save Certificate</button>
+</div>
+</div>
+
+<script>
+let char=null,level=0,score=0,correct=0;
+const levels=[
+{title:"Level 1: Missing Revenue",desc:"Revenue dropped 30%. Find why.",scenario:"RetailCo revenue dropped from $500K to $350K. Marketing says 'seasonal dip.' Sales blames 'inventory.' What do you check first?",question:"What's your first move?",options:[{t:"Check revenue by region",c:true,fb:"🎯 Correct! Start broad, then drill down."},{t:"Look at individual products",c:false,fb:"❌ Too narrow. Start with region/time."},{t:"Blame marketing",c:false,fb:"❌ Follow evidence, not blame."},{t:"Email CEO for more time",c:false,fb:"❌ Never go empty-handed."}]},
+{title:"Level 2: SQL Mystery",desc:"Write the correct query.",scenario:"Need customers who ordered in last 30 days with total spend. Tables: customers and orders.",question:"Which query is correct?",options:[{t:"SELECT * FROM customers, orders WHERE id = customer_id",c:false,fb:"❌ No date filter or grouping."},{t:"SELECT c.name, SUM(o.amount) FROM customers c JOIN orders o ON c.id = o.customer_id WHERE order_date >= DATE_SUB(NOW(),30) GROUP BY c.id",c:true,fb:"🎯 Correct! JOIN + WHERE + GROUP BY + SUM."},{t:"SELECT name FROM customers WHERE join_date > '2024-05'",c:false,fb:"❌ Checks join date, not order date."},{t:"SELECT customer_id, amount FROM orders ORDER BY amount DESC",c:false,fb:"❌ Shows individual orders, not totals."}]},
+{title:"Level 3: Dashboard Dilemma",desc:"CEO hates your dashboard.",scenario:"12 charts, 5 slicers, 3 drill pages. CEO looks for 10 seconds: 'I don't understand.' What's wrong?",question:"What's the #1 problem?",options:[{t:"Too many colors",c:false,fb:"❌ Colors aren't the core issue."},{t:"Needs a clear 'so what?' headline",c:true,fb:"🎯 Correct! One clear insight at the top."},{t:"CEO is not technical enough",c:false,fb:"❌ Never blame the user."},{t:"Needs more charts",c:false,fb:"❌ More charts = more confusion."}]},
+{title:"Level 4: Outlier Hunt",desc:"Fraud detection alert.",scenario:"47 transactions at 3:47 AM from same IP. Each $999.99 — just under $1000 threshold. What's this called?",question:"What statistical concept?",options:[{t:"Regression to the mean",c:false,fb:"❌ This is deliberate, not natural."},{t:"Benford's Law",c:false,fb:"❌ Applies to first digits, not thresholds."},{t:"Threshold manipulation / structuring",c:true,fb:"🎯 Correct! Deliberately avoiding reporting limits."},{t:"Normal distribution",c:false,fb:"❌ 47 identical amounts is NOT normal."}]},
+{title:"Level 5: A/B Test Trap",desc:"Marketing claims 20% win.",scenario:"A/B test: B got 120 conversions vs A's 100. They want to roll out B. What do you verify?",question:"What MUST you check?",options:[{t:"Statistical significance (p-value, sample size)",c:true,fb:"🎯 Correct! 220 total might not be enough."},{t:"Ask design team opinion",c:false,fb:"❌ Data > opinions. HiPPO mistake."},{t:"Check if B loads faster",c:false,fb:"❌ Interesting but secondary."},{t:"Approve immediately",c:false,fb:"❌ Never without statistical validation."}]},
+{title:"Level 6: Correlation Confusion",desc:"Ice cream = drowning?!",scenario:"CEO: 'Ban ice cream! 0.95 correlation with drowning deaths!' Response?",question:"Real explanation?",options:[{t:"Ice cream impairs judgment",c:false,fb:"❌ No evidence. Correlation ≠ Causation."},{t:"Third variable: temperature/season drives both",c:true,fb:"🎯 Correct! Lurking variable. Hot weather causes both."},{t:"Data is flawed",c:false,fb:"❌ Data may be fine. Logic is wrong."},{t:"Need more data",c:false,fb:"❌ More data won't fix bad logic."}]},
+{title:"Level 7: Data Ethics",desc:"The Final Boss.",scenario:"HR wants ML model predicting who will quit. Features: performance, salary, tenure, age, GENDER, marital status, children. Model decides retention bonuses.",question:"Most critical ethical concern?",options:[{t:"Model might not be accurate enough",c:false,fb:"❌ Technical issue, not ethical."},{t:"Using protected characteristics creates discrimination",c:true,fb:"🎯 Correct! Algorithmic bias. Illegal and unethical."},{t:"Employees might get upset",c:false,fb:"❌ Privacy concern, but secondary."},{t:"Bonuses cost too much",c:false,fb:"❌ Business issue, not ethical."}]}
+];
+
+function pick(c){char=c;document.querySelectorAll('.card').forEach(x=>x.classList.remove('selected'));document.getElementById('c-'+c).classList.add('selected');document.getElementById('start').disabled=false;}
+function go(){document.getElementById('welcome').style.display='none';document.getElementById('game').style.display='block';load(0);}
+function load(i){level=i;const L=levels[i];document.getElementById('title').textContent=L.title;document.getElementById('desc').textContent=L.desc;document.getElementById('scenario').textContent=L.scenario;document.getElementById('question').textContent=L.question;document.getElementById('feedback').innerHTML='';document.getElementById('next').style.display='none';const o=document.getElementById('options');o.innerHTML='';const labs=['A','B','C','D'];L.options.forEach((opt,j)=>{const b=document.createElement('div');b.className='option';b.innerHTML='<b>'+labs[j]+'</b> '+opt.t;b.onclick=()=>check(j);o.appendChild(b);});}
+function check(j){const L=levels[level],opts=document.querySelectorAll('.option'),sel=L.options[j];opts.forEach((b,i)=>{b.onclick=null;b.style.opacity='0.7';if(i===j)b.classList.add(sel.c?'correct':'wrong');if(L.options[i].c)b.classList.add('correct');});const f=document.getElementById('feedback');f.className='feedback '+(sel.c?'ok':'bad');f.textContent=sel.fb;if(sel.c){score+=100;correct++;}document.getElementById('next').style.display='inline-block';}
+function next(){if(level<6)load(level+1);else{document.getElementById('game').style.display='none';document.getElementById('cert').style.display='block';document.getElementById('s-score').textContent=score;document.getElementById('s-correct').textContent=correct;document.getElementById('s-date').textContent=new Date().toLocaleDateString();}}
+</script>
+</body>
+</html>
